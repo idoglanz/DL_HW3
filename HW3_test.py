@@ -9,7 +9,7 @@ from keras.utils import plot_model
 from IPython.display import display, Image
 
 
-# =============================================== Load CIFAR-10 Data-set =============================================
+# =========================================== Data loading utility functions  ==========================================
 
 
 def unpickle(file):
@@ -48,6 +48,9 @@ def print_CIFAR(img_as_vector, label=None):
     plt.show()
 
 
+# =============================================== Load CIFAR-10 Data-set =============================================
+
+
 label_name = unpickle('./cifar-10-batches-py/batches.meta')[b'label_names']
 
 [X_train, y_train] = load_CIFAR([1, 2,3, 4, 5])
@@ -61,7 +64,7 @@ img_rows, img_cols, img_layers = 32, 32, 3
 X_test = test_set[b'data']
 y_test = test_set[b'labels']
 
-pic = 3
+# pic = 3
 
 # print_CIFAR(X_test[pic, :], label_name[y_test[pic]])
 
@@ -72,6 +75,7 @@ y_train = keras.utils.to_categorical(y_train)
 y_test = keras.utils.to_categorical(y_test)
 
 print(X_train.shape)
+
 
 # ================================================== Build model ==================================================
 
@@ -84,16 +88,6 @@ epochs = 10
 
 
 model = Sequential()
-
-# model.add(Conv2D(32, kernel_size=(5, 5), strides=(1, 1),
-#                  activation='relu',
-#                  input_shape=input_shape))
-# model.add(MaxPooling2D(pool_size=(2, 2), strides=(2, 2)))
-# model.add(Conv2D(64, (5, 5), activation='relu'))
-# model.add(MaxPooling2D(pool_size=(2, 2)))
-# model.add(Flatten())
-# model.add(Dense(1000, activation='relu'))
-# model.add(Dense(num_classes, activation='softmax'))
 
 model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=(32, 32, 3)))
 model.add(Conv2D(64, kernel_size=(3, 3), activation='relu'))
@@ -118,6 +112,8 @@ model.compile(loss=keras.losses.categorical_crossentropy,
 
 # plot_model(model, to_file='model.png', show_shapes=True, rankdir='TB')
 # display(Image(filename='model.png'))
+
+model.summary()
 
 history = model.fit(
     X_train, y_train,
