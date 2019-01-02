@@ -21,7 +21,7 @@ from sklearn.neighbors import KNeighborsClassifier
 
 class cifar100vgg:
     def __init__(self, train=True):
-        self.num_classes = 10          # Augmented to fit CIFAR-10
+        self.num_classes = 100
         self.weight_decay = 0.0005
         self.x_shape = [32, 32, 3]
 
@@ -111,12 +111,7 @@ class cifar100vgg:
 
         model.add(Flatten())
         model.add(Dense(512, kernel_regularizer=regularizers.l2(weight_decay)))
-        # model.add(Activation('relu'))
-        # model.add(BatchNormalization())
-        #
-        # model.add(Dropout(0.5))
-        # model.add(Dense(self.num_classes, name='new_dense'))
-        # model.add(Activation('softmax'))
+
         return model
 
 
@@ -125,7 +120,7 @@ class cifar100vgg:
         # it is used when training a model.
         # Input: training set and test set
         # Output: normalized training set and test set according to the trianing set statistics.
-        mean = np.mean(X_train,axis=(0,1,2,3))
+        mean = np.mean(X_train, axis=(0,1,2,3))
         std = np.std(X_train, axis=(0, 1, 2, 3))
         print(mean)
         print(std)
@@ -159,13 +154,14 @@ class cifar100vgg:
         lr_drop = 20
 
         # The data, shuffled and split between train and test sets:
-        # (x_train, y_train), (x_test, y_test) = cifar100.load_data()
 
         (x_train_full, y_train_full), (x_test_full, y_test_full) = cifar10.load_data()
 
-        x_train, _, y_train, _ = train_test_split(x_train_full, y_train_full, train_size=500, random_state=42,
+        # Train set
+        x_train, _, y_train, _ = train_test_split(x_train_full, y_train_full, train_size=100, random_state=42,
                                                               stratify=y_train_full)
 
+        # Test set
         x_test, _, y_test, _ = train_test_split(x_test_full, y_test_full, train_size=100, random_state=42,
                                                               stratify=y_test_full)
 
@@ -186,7 +182,7 @@ class cifar100vgg:
         reduce_lr = keras.callbacks.LearningRateScheduler(lr_scheduler)
 
 
-        #data augmentation
+        # data augmentation
         datagen = ImageDataGenerator(
             featurewise_center=False,  # set input mean to 0 over the dataset
             samplewise_center=False,  # set each sample mean to 0
@@ -214,19 +210,6 @@ class cifar100vgg:
                             steps_per_epoch=x_train.shape[0] // batch_size,
                             epochs=maxepoches,
                             validation_data=(x_test, y_test),callbacks=[reduce_lr],verbose=2)
-
-
-        # history = model.fit(
-        #     x_train, y_train,
-        #     batch_size=batch_size,
-        #     epochs=epochs,
-        #     verbose=1,
-        #     validation_data=(x_test, y_test))
-
-        # predicted_x = model.predict(x_test_full)
-        # residuals = (np.argmax(predicted_x, 1) != np.argmax(y_test_full, 1))
-        # loss = sum(residuals) / len(residuals)
-        # print("the validation 0/1 loss is: ", loss)
 
         his = history.history
         x = list(range(epochs))
@@ -282,14 +265,12 @@ def KNN_loss(y_test, y_bar):
 
 
 def predict_KNN(k, features, y_train, x_test):
-
     neigh = KNeighborsClassifier(n_neighbors=k)
     neigh.fit(features, np.ravel(y_train))
 
     test_set = VGG10_EKNN.model.predict(x_test)
 
     y_bar = neigh.predict(test_set)
-    print(y_bar)
     return np.round(y_bar)
 
 
@@ -297,13 +278,13 @@ VGG10_EKNN = cifar100vgg(train=False)
 
 VGG10_EKNN.model.summary()
 
-[x_train, y_train, x_test, y_test] = load_data(train_size=1000, test_size=300)
+[x_train, y_train, x_test, y_test] = load_data(train_size=10000, test_size=1000)
 
 features = VGG10_EKNN.model.predict(x_train)
 
 acc = []
 
-for k in range(1, 20):
+for k in range(1, 40):
 
     y_bar = predict_KNN(k, features, y_train, x_test)
     accuracy = KNN_loss(y_test, y_bar)
@@ -315,3 +296,4 @@ plt.ylabel("0/1 accuracy")
 plt.xlabel("K")
 plt.title('Accuracy vs K')
 plt.show()
+

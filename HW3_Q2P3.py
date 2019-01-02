@@ -18,10 +18,21 @@ from keras.datasets import cifar10
 import matplotlib.pyplot as plt
 
 
+def plot_history(*histories):
+    plt.figure(figsize=(20, 10))
+    for history, name in histories:
+        his = history.history
+        val_acc = his['val_acc']
+        train_acc = his['acc']
+        plt.plot(np.arange(len(val_acc)), val_acc, label=f'{name} val_acc')
+        plt.plot(np.arange(len(train_acc)), train_acc, label=f'{name} acc')
+        plt.legend()
+
+
 class cifar100vgg:
     def __init__(self, train=True):
         self.num_classes = 10  # Augmented to fit CIFAR-10
-        self.weight_decay = 0.0005
+        self.weight_decay = 0.01  # heavily regulated
         self.x_shape = [32, 32, 3]
 
         self.model = self.build_model()
@@ -109,20 +120,24 @@ class cifar100vgg:
         model.add(Dropout(0.5))
 
         model.add(Flatten())
-        model.add(Dense(512, kernel_regularizer=regularizers.l2(weight_decay)))
+        model.add(Dense(512, kernel_regularizer=regularizers.l2(weight_decay), name='new_dense1'))
         model.add(Activation('relu'))
         model.add(BatchNormalization())
 
         model.add(Dropout(0.5))
-        model.add(Dense(self.num_classes, name='new_dense'))
+        model.add(Dense(self.num_classes, name='new_dense2'))
         model.add(Activation('softmax'))
+
+        #         model.add(GlobalAveragePooling2D(name='new_layer'))
+        #         model.add(Dense(self.num_classes, activation='softmax', name='new_dense'))
+
         return model
 
     def normalize(self, X_train, X_test):
         # this function normalize inputs for zero mean and unit variance
         # it is used when training a model.
         # Input: training set and test set
-        # Output: normalized training set and test set according to the training set statistics.
+        # Output: normalized training set and test set according to the trianing set statistics.
         mean = np.mean(X_train, axis=(0, 1, 2, 3))
         std = np.std(X_train, axis=(0, 1, 2, 3))
         print(mean)
@@ -137,8 +152,9 @@ class cifar100vgg:
         # Output X - a normalized training set according to normalization constants.
 
         # these values produced during first training and are general for the standard cifar10 training set normalization
-        mean = 121.936
-        std = 68.389
+        mean = 122.195
+        std = 64.428
+
         return (x - mean) / (std + 1e-7)
 
     def predict(self, x, normalize=True, batch_size=50):
@@ -150,7 +166,7 @@ class cifar100vgg:
 
         # training parameters
         batch_size = 128
-        maxepoches = 250
+        maxepoches = 300
         epochs = 40
         learning_rate = 0.1
         lr_decay = 1e-6
@@ -158,11 +174,9 @@ class cifar100vgg:
 
         (x_train_full, y_train_full), (x_test_full, y_test_full) = cifar10.load_data()
 
-        x_train, _, y_train, _ = train_test_split(x_train_full, y_train_full, train_size=1000, random_state=42,
-                                                  stratify=y_train_full)
-
-        x_test, _, y_test, _ = train_test_split(x_test_full, y_test_full, train_size=1000, random_state=42,
-                                                stratify=y_test_full)
+        x_train, x_test, y_train, y_test = train_test_split(x_train_full, y_train_full, train_size=10000,
+                                                            test_size=0.02, random_state=42,
+                                                            stratify=y_train_full)
 
         print('x_train shape:', x_train.shape)
         print(x_train.shape[0], 'train samples')
@@ -207,24 +221,16 @@ class cifar100vgg:
                                       epochs=maxepoches,
                                       validation_data=(x_test, y_test), callbacks=[reduce_lr], verbose=2)
 
-        his = history.history
-        x = list(range(epochs))
-        y_1 = his['val_acc']
-        y_2 = his['acc']
-        plt.plot(x, y_1)
-        plt.plot(x, y_2)
-        plt.legend(['validation accuracy', 'training_accuracy'])
-        plt.show()
+        plot_history((history, 'Transfer'))
 
-        model.save_weights('cifar10vgg_bo100.h5')
         return model
 
 
 VGG10 = cifar100vgg(train=False)
 
-# Freeze the layers except the last layer
-for layer in VGG10.model.layers[:-2]:
-    layer.trainable = False
+# # Freeze the layers except the last layer
+# for layer in VGG10.model.layers[:-6]:
+#     layer.trainable = False
 
 # Check the trainable status of the individual layers
 for layer in VGG10.model.layers:
@@ -233,3 +239,4 @@ for layer in VGG10.model.layers:
 VGG10.model.summary()
 
 VGG10.train(VGG10.model)
+
