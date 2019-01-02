@@ -18,6 +18,17 @@ from keras.datasets import cifar10
 import matplotlib.pyplot as plt
 
 
+def plot_history(*histories):
+    plt.figure(figsize=(20, 10))
+    for history, name in histories:
+        his = history.history
+        val_acc = his['val_acc']
+        train_acc = his['acc']
+        plt.plot(np.arange(len(val_acc)), val_acc, label=f'{name} val_acc')
+        plt.plot(np.arange(len(train_acc)), train_acc, label=f'{name} acc')
+        plt.legend()
+
+
 class cifar100vgg:
     def __init__(self, train=True):
         self.num_classes = 10  # Augmented to fit CIFAR-10
@@ -122,7 +133,7 @@ class cifar100vgg:
         # this function normalize inputs for zero mean and unit variance
         # it is used when training a model.
         # Input: training set and test set
-        # Output: normalized training set and test set according to the training set statistics.
+        # Output: normalized training set and test set according to the trianing set statistics.
         mean = np.mean(X_train, axis=(0, 1, 2, 3))
         std = np.std(X_train, axis=(0, 1, 2, 3))
         print(mean)
@@ -207,16 +218,7 @@ class cifar100vgg:
                                       epochs=maxepoches,
                                       validation_data=(x_test, y_test), callbacks=[reduce_lr], verbose=2)
 
-        his = history.history
-        x = list(range(epochs))
-        y_1 = his['val_acc']
-        y_2 = his['acc']
-        plt.plot(x, y_1)
-        plt.plot(x, y_2)
-        plt.legend(['validation accuracy', 'training_accuracy'])
-        plt.show()
-
-        model.save_weights('cifar10vgg_bo100.h5')
+        plot_history((history, 'Transfer'))
         return model
 
 
